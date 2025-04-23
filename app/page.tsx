@@ -21,20 +21,37 @@ export default function Home() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
+    
+    // Definiendo un tipo para los datos que vienen de Supabase
+    type ReporteDB = {
+      id: string;
+      zona: string;
+      categoria: string;
+      descripcion: string;
+      lat: number | null;
+      lon: number | null;
+    };
+    
     async function fetchReportesMapa() {
       const { data, error } = await supabase
         .from("reportes")
         .select("id, zona, categoria, descripcion, lat, lon");
+      
       if (!error && data) {
-        const marcadores = data.filter(r => typeof r.lat === "number" && typeof r.lon === "number")
-          .map(r => ({
+        // Asegurando que data es tipado correctamente
+        const reportesData = data as ReporteDB[];
+        
+        const marcadores = reportesData
+          .filter((r: ReporteDB) => typeof r.lat === "number" && typeof r.lon === "number")
+          .map((r: ReporteDB) => ({
             id: r.id,
             zona: r.zona,
             categoria: r.categoria,
             descripcion: r.descripcion,
-            lat: r.lat,
-            lon: r.lon
+            lat: r.lat as number,  // Aseguramos que TypeScript sabe que es número
+            lon: r.lon as number   // Aseguramos que TypeScript sabe que es número
           }));
+          
         setReportesMapa(marcadores);
       }
     }
