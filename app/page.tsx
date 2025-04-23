@@ -1,103 +1,108 @@
+"use client";
+import React from "react";
 import Image from "next/image";
+import FeedReportes from "../components/FeedReportes";
+import ReportesConEstadisticas from "../components/ReportesConEstadisticas";
+import Mapa from "../components/Mapa";
+
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  type ReporteMarcador = {
+    id: string;
+    zona: string;
+    categoria: string;
+    descripcion: string;
+    lat: number;
+    lon: number;
+  };
+  const [reportesMapa, setReportesMapa] = useState<ReporteMarcador[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    async function fetchReportesMapa() {
+      const { data, error } = await supabase
+        .from("reportes")
+        .select("id, zona, categoria, descripcion, lat, lon");
+      if (!error && data) {
+        const marcadores = data.filter(r => typeof r.lat === "number" && typeof r.lon === "number")
+          .map(r => ({
+            id: r.id,
+            zona: r.zona,
+            categoria: r.categoria,
+            descripcion: r.descripcion,
+            lat: r.lat,
+            lon: r.lon
+          }));
+        setReportesMapa(marcadores);
+      }
+    }
+    fetchReportesMapa();
+    interval = setInterval(fetchReportesMapa, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <main className="min-h-screen flex flex-col bg-[#FFFDE7] text-[#232323] font-sans">
+      {/* HERO */}
+      <section className="flex flex-col items-center justify-center flex-1 px-4 pt-16 pb-10 text-center bg-gradient-to-b from-[#FFD600] via-[#FFFDE7] to-white">
+        <div className="flex flex-col items-center">
+          <span className="mx-auto mb-6 drop-shadow-2xl bg-white rounded-full border-4 border-[#FFD600] flex items-center justify-center" style={{width:180, height:180}}>
+  {/* SVG LOGO CiudadScore.gt */}
+  <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="70" cy="70" r="66" stroke="#222" strokeWidth="8" fill="#FFD600"/>
+    <g>
+      <rect x="40" y="60" width="16" height="32" fill="#222"/>
+      <rect x="62" y="44" width="16" height="48" fill="#222"/>
+      <rect x="84" y="54" width="16" height="38" fill="#222"/>
+      <polygon points="35,110 70,95 105,110 70,120" fill="#222"/>
+    </g>
+  </svg>
+</span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 max-w-2xl leading-tight">
+            Tu zona merece más <span className="text-[#4CAF50]">Reporta, comparte, cambia.</span>
+          </h1>
+          <p className="mb-8 text-lg max-w-xl mx-auto font-medium text-[#4A4A4A]">
+            CiudadScore.gt te da el poder de visibilizar problemas urbanos y generar presión para que la municipalidad actúe. <span className="text-[#4CAF50] font-bold">La voz ciudadana sí cuenta.</span>
+          </p>
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/reportar"
+            className="inline-block px-10 py-4 rounded-full bg-[#4A4A4A] text-[#FFD600] text-xl font-bold shadow-lg hover:bg-[#333] transition-colors tracking-wide mb-2"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+            Envía tu reporte ahora
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <span className="text-xs text-[#757575] mt-2">Es gratis, rápido y puedes hacerlo de forma anónima.</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* PASOS */}
+      <section className="py-10 px-4 bg-white text-[#232323]">
+        <h2 className="text-2xl font-bold mb-8 text-center">¿Cómo funciona?</h2>
+        <div className="flex flex-col sm:flex-row gap-6 justify-center items-stretch">
+          <div className="flex-1 flex flex-col items-center p-4">
+            <span className="bg-[#FFD600] rounded-full w-16 h-16 flex items-center justify-center text-3xl font-extrabold mb-2 border-4 border-[#4A4A4A] shadow">📸</span>
+            <p className="font-bold text-lg mb-1">Reporta</p>
+            <span className="text-sm text-[#757575]">Sube foto, ubicación y cuenta qué pasa</span>
+          </div>
+          <div className="flex-1 flex flex-col items-center p-4">
+            <span className="bg-[#4CAF50] rounded-full w-16 h-16 flex items-center justify-center text-3xl font-extrabold mb-2 border-4 border-[#4A4A4A] text-white shadow">🌎</span>
+            <p className="font-bold text-lg mb-1">Se publica</p>
+            <span className="text-sm text-[#757575]">Tu reporte aparece en el mapa y ranking</span>
+          </div>
+          <div className="flex-1 flex flex-col items-center p-4">
+            <span className="bg-[#4A4A4A] rounded-full w-16 h-16 flex items-center justify-center text-3xl font-extrabold mb-2 border-4 border-[#FFD600] text-[#FFD600] shadow">🏆</span>
+            <p className="font-bold text-lg mb-1">Tu zona sube o baja</p>
+            <span className="text-sm text-[#757575]">Entre más participación, mejor puntaje</span>
+          </div>
+        </div>
+      </section>
+
+      {/* REPORTES + ESTADÍSTICAS */}
+      <ReportesConEstadisticas />
+
+      {/* MAPA INTERACTIVO */}
+      <Mapa reportes={reportesMapa} />
+    </main>
   );
 }
