@@ -1,0 +1,181 @@
+# RFC: CiudadScore - Implementación del Panel Administrativo y Sistema de Gestión de Reportes
+
+## Meta
+* RFC #: 001
+* Autor: Equipo CiudadScore
+* Fecha: 2025-04-23
+* Estado: Propuesta
+* Implementación: Pendiente
+
+## Resumen
+
+Este documento propone la implementación de un Panel Administrativo para la plataforma CiudadScore.gt y la mejora del sistema de reportes ciudadanos, permitiendo a funcionarios municipales gestionar eficientemente los reportes, actualizar su estado y proporcionar pruebas de resolución visibles para los ciudadanos.
+
+## Motivación
+
+La plataforma CiudadScore actualmente permite a ciudadanos reportar problemas urbanos pero carece de una interfaz administrativa que permita a los funcionarios municipales gestionar estos reportes y demostrar transparencia en su resolución. Esta propuesta busca cerrar el ciclo de comunicación entre ciudadanos y autoridades.
+
+## Diseño Detallado
+
+### 1. Estructura de Aplicación
+
+#### 1.1 Reorganización de Layouts
+```
+app/
+├── (public)/               # Grupo de páginas públicas
+│   ├── layout.tsx          # Layout con NavBar actual
+│   ├── page.tsx            # Landing page
+│   ├── reportar/           # Crear reportes
+│   └── mapa/               # Ver reportes en mapa público
+├── (admin)/                # Grupo de páginas admin protegidas
+│   ├── layout.tsx          # Layout con sidebar admin
+│   ├── dashboard/          # Panel principal
+│   ├── reportes/           # Gestión de reportes
+│   ├── zonas/              # Análisis por zonas
+│   └── configuracion/      # Ajustes del sistema
+├── login/                  # Fuera de ambos grupos
+│   └── page.tsx            # Página de login independiente
+└── layout.tsx              # Layout raíz (minimal)
+```
+
+#### 1.2 Componentes de Interfaz
+* El panel administrativo tendrá un diseño consistente con el branding de CiudadScore (#FFD600, #4CAF50, #4A4A4A)
+* La landing page pública mantendrá su diseño actual con adiciones para mostrar estados de reportes
+
+### 2. Esquema de Datos
+
+#### 2.1 Modificaciones en Tablas Existentes
+```sql
+-- Modificación tabla reportes
+ALTER TABLE public.reportes
+ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'pendiente',
+ADD COLUMN IF NOT EXISTS fecha_actualizacion TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS admin_responsable TEXT,
+ADD COLUMN IF NOT EXISTS pruebas_resuelto TEXT[],
+ADD COLUMN IF NOT EXISTS comentario_resolucion TEXT,
+ADD COLUMN IF NOT EXISTS fecha_resolucion TIMESTAMP WITH TIME ZONE;
+```
+
+#### 2.2 Nuevas Tablas
+```sql
+-- Tabla de administradores
+CREATE TABLE IF NOT EXISTS public.admins (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  rol TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Historial de cambios
+CREATE TABLE IF NOT EXISTS public.historial_cambios (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  reporte_id UUID NOT NULL REFERENCES public.reportes(id),
+  estado_anterior TEXT,
+  estado_nuevo TEXT NOT NULL,
+  admin_email TEXT NOT NULL,
+  fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### 3. Funcionalidades Clave
+
+#### 3.1 Sistema de Autenticación
+* Integración con Supabase Auth para autenticación de administradores
+* Middleware para protección de rutas administrativas
+* Múltiples roles: administrador, editor, visualizador
+
+#### 3.2 Panel de Control Principal
+* KPIs en tiempo real: total reportes, resueltos, pendientes, zonas activas
+* Ranking de zonas por CityScore
+* Distribución de reportes por categoría
+* Lista de reportes recientes con acciones rápidas
+
+#### 3.3 Gestión de Reportes
+* Visualización completa con filtros múltiples (zona, categoría, estado, fecha)
+* Sistema para cambiar estado: pendiente → en proceso → resuelto
+* Subida de pruebas de resolución (imágenes y comentarios)
+* Historial de cambios por reporte
+
+#### 3.4 Análisis por Zonas
+* Vista detallada de cada zona con estadísticas
+* Visualización geoespacial de reportes por zona
+* Distribución por categorías dentro de cada zona
+* Ajuste manual del CityScore cuando sea necesario
+
+#### 3.5 Integración de Mapas
+* Adaptación del componente Mapa.tsx existente para el panel administrativo
+* Visualización de reportes con código de colores según estado
+* Filtrado avanzado en el mapa
+
+#### 3.6 Actualización de Landing Page Pública
+* Indicador visual de estado en cada reporte
+* Sección "Pruebas de resolución" para reportes resueltos
+* Contador de reportes resueltos y tiempo promedio de resolución
+
+### 4. Integración en Tiempo Real
+
+#### 4.1 Suscripciones Supabase
+* Actualización automática de dashboard al recibir nuevos reportes
+* Notificaciones de cambios de estado
+* Sincronización entre panel admin y vista pública
+
+#### 4.2 Optimización
+* Implementación de caché para consultas frecuentes
+* Lazy loading para componentes pesados
+* Paginación eficiente para listas largas
+
+## Consideraciones de Implementación
+
+### Fase 1: Estructura y Autenticación
+* Reorganización de layouts y estructura de archivos
+* Implementación del sistema de autenticación con Supabase
+* Creación de tablas necesarias en la base de datos
+
+### Fase 2: Panel Administrativo Básico
+* Dashboard con KPIs
+* Gestión básica de reportes
+* Visualización de zonas
+
+### Fase 3: Sistema de Resolución de Reportes
+* Flujo completo para cambiar estados
+* Subida de pruebas de resolución
+* Historial de cambios
+
+### Fase 4: Integración con Landing Page Pública
+* Mostrar estados de reportes
+* Visualización de pruebas de resolución
+* Actualización de marcadores en el mapa
+
+### Fase 5: Optimización y Mejoras
+* Rendimiento y caché
+* Exportación de reportes
+* Ajustes finales de UX/UI
+
+## Consideraciones de Seguridad
+* Row Level Security (RLS) en Supabase para proteger datos sensibles
+* Autenticación robusta para el panel administrativo
+* Validación de entradas en todos los formularios
+* Sanitización de datos subidos por usuarios
+
+## Alternativas Consideradas
+* Plataforma de administración separada vs. integrada en la misma aplicación
+* PostgreSQL functions vs. lógica en frontend para cálculos de estadísticas
+* Sistema de autenticación propio vs. Supabase Auth
+
+## Referencias
+* Documentación de Next.js App Router
+* Supabase JavaScript Client Documentation
+* Mapbox GL JS Documentation
+
+## Apéndice: Diseño de UI
+* La interfaz administrativa seguirá los principios de diseño de CiudadScore:
+  * Elementos primarios: #FFD600 (amarillo institucional)
+  * Acciones positivas: #4CAF50 (verde)
+  * Texto y elementos neutros: #4A4A4A (gris)
+  * Indicadores de estado: pendiente (amarillo), en proceso (azul), resuelto (verde)
+
+---
+
+Esta propuesta busca establecer un sistema completo que no solo facilite la gestión municipal de reportes urbanos, sino que también aumente la transparencia gubernamental al permitir a los ciudadanos verificar la resolución de sus reportes con evidencia visual.

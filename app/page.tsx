@@ -35,7 +35,7 @@ export default function Home() {
     async function fetchReportesMapa() {
       const { data, error } = await supabase
         .from("reportes")
-        .select("id, zona, categoria, descripcion, lat, lon");
+        .select("id, zona, categoria, descripcion, lat, lon, estado, pruebas_resuelto, comentario_resolucion, fecha_resolucion");
       
       if (!error && data) {
         // Asegurando que data es tipado correctamente
@@ -49,6 +49,11 @@ export default function Home() {
             categoria: r.categoria,
             descripcion: r.descripcion,
             lat: r.lat as number,  // Aseguramos que TypeScript sabe que es número
+            lon: r.lon as number,   // Aseguramos que TypeScript sabe que es número
+            estado: r.estado,
+            pruebas_resuelto: r.pruebas_resuelto,
+            comentario_resolucion: r.comentario_resolucion,
+            fecha_resolucion: r.fecha_resolucion,
             lon: r.lon as number   // Aseguramos que TypeScript sabe que es número
           }));
           
