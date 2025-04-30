@@ -30,6 +30,10 @@ export default function Home() {
       descripcion: string;
       lat: number | null;
       lon: number | null;
+      estado?: string;
+      pruebas_resuelto?: string[];
+      comentario_resolucion?: string;
+      fecha_resolucion?: string;
     };
     
     async function fetchReportesMapa() {
@@ -54,7 +58,6 @@ export default function Home() {
             pruebas_resuelto: r.pruebas_resuelto,
             comentario_resolucion: r.comentario_resolucion,
             fecha_resolucion: r.fecha_resolucion,
-            lon: r.lon as number   // Aseguramos que TypeScript sabe que es número
           }));
           
         setReportesMapa(marcadores);
