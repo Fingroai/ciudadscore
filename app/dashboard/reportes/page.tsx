@@ -91,8 +91,8 @@ export default function ReportesPage() {
         setReportes(reportesFormateados);
         
         // Obtener lista única de zonas y categorías para filtros
-        const zonasUnicas = [...new Set(data.map((r: any) => r.zona))];
-        const categoriasUnicas = [...new Set(data.map((r: any) => r.categoria))];
+        const zonasUnicas = [...new Set(data.map((r: any) => String(r.zona)))].filter(Boolean) as string[];
+        const categoriasUnicas = [...new Set(data.map((r: any) => String(r.categoria)))].filter(Boolean) as string[];
         
         setZonas(zonasUnicas);
         setCategorias(categoriasUnicas);
